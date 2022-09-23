@@ -3,6 +3,7 @@ nvcc      = ${lean_cuda}/bin/nvcc
 
 # protobuf 环境 3.11.4
 lean_protobuf  := /usr/local/
+
 # tensor_rt 环境   
 lean_tensor_rt := /home/morvan/sdk/TensorRT-8.0.1.6/
 lean_cudnn     := 

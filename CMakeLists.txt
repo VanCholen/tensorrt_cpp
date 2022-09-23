@@ -1,74 +1,146 @@
 cmake_minimum_required(VERSION 2.6)
-project(pro)
+
+project(pro LANGUAGES CUDA CXX)
 
 option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_BUILD_TYPE Debug)
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/workspace)
 
-# 如果要支持python则设置python路径
+include(CheckLanguage)
+# ref: https://cmake.org/cmake/help/latest/module/CheckLanguage.html#module:CheckLanguage
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+  enable_language(CUDA)    # ref: https://cmake.org/cmake/help/latest/command/enable_language.html#command:enable_language
+else()
+  message(STATUS "No CUDA support!")
+endif()
+
+
+# 指定编译类型
+# - Debug
+# - Release
+set(CMAKE_BUILD_TYPE Debug)
+
+# C++语言层面
+# - C++ 11标准
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+
+# - 编译时 g++ 时所带的参数 先引用${CMAKE_CXX_FLAGS},然后在后面添加   有点类似export PATH=${PATH}:extra_path
+# -std=c++11表示使用C++11标准
+# -g 生成只有gdb能看懂的调试信息 常常和 -O0一起使用
+# -O0 表示没有优化(默认)  -O3优化最高
+# -Wall  开启“所有常见的”编译器警告 至于是哪些警告 参见 https://linux.die.net/man/1/g++
+# -Wfatal-errors 告诉编译器如果编译错误，则立即停止编译
+# -pthread ###################################################################
+# Define additional macros required for using the POSIX threads library. 
+# You should use this option consistently for both compilation and linking. 
+# This option is supported on GNU/Linux targets, most other Unix derivatives, 
+# and also on x86 Cygwin and MinGW targets.
+# consistently for both compilation and linking.  This option is supported on GNU/Linux targets, most
+# other Unix derivatives, and also on x86 Cygwin and MinGW targets.
+# ############################################################################
+# -w Suppress all warnings, including those which GNU CPP issues by default.
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g -O0 -Wfatal-errors -pthread -w")
+
+# 设置传递给nvcc编译器的参数  好像这种设置方式已经被deprecated
+# 更新式的做法应该是使用target_compile_options() 
+# 先这样写着吧，后续有时间再重构
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O0 -Xcompiler -fPIC -g -w ${CUDA_GEN_CODE}")
+
+
+# ref: https://cmake.org/cmake/help/latest/variable/EXECUTABLE_OUTPUT_PATH.html?highlight=executable_output_path
+# set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/workspace)
+# EXECUTABLE_OUTPUT_PATH 已经被 RUNTIME_OUTPUT_DIRECTORY 变量替代
+# set(RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/workspace)
+# 用 CMAKE_RUNTIME_OUTPUT_DIRECTORY 初始化 RUNTIME_OUTPUT_DIRECTORY ref: https://cmake.org/cmake/help/v3.0/variable/CMAKE_RUNTIME_OUTPUT_DIRECTORY.html?highlight=cmake_runtime_output_directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/workspace)
+
+
+
+
+
+# 自定义变量， 如果要支持python则设置python路径
 set(HAS_PYTHON ON)
-set(PythonRoot "/datav/software/anaconda3")
-set(PythonName "python3.9")
+
+# set(PythonRoot "/datav/software/anaconda3")
+
+# 设置你的python版本
+set(PythonName "python3.8")
+
+# 依赖
+# - 头文件 (many .h)
+# - 库文件 (many .so[Linux] or .dll[Windows])
+
+# 1.Python支持
+if("${HAS_PYTHON}" STREQUAL "ON")
+    message("Usage Python ${PythonRoot}")
+    # include_directories(${PythonRoot}/include/${PythonName})
+    # link_directories(${PythonRoot}/lib)
+    include_directories(/usr/include/${PythonName})
+    link_directories(/usr/lib/x86_64-linux-gnu/)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAS_PYTHON")
+endif()
+
+# 2.OpenCV
+# set(OpenCV_DIR   "your opencv build dir")
+find_package(OpenCV)
+
+# 3.cuDNN   由于我已经将cuDNN的头文件和库文件拷贝到了cuda下 故在此不设置了
+set(CUDNN_DIR    "/usr/local/cuda-11.3")
+
+# 5.protobuf 要在tensorrt的前面  因为tensorRTlib下带有protobuf的so文件
+set(PROTOBUF_DIR "/usr/local")     
+include_directories(${PROTOBUF_DIR}/include)
+link_directories(${PROTOBUF_DIR}/lib)
+
+# 4.TensorRT
+set(TENSORRT_DIR "/home/morvan/sdk/TensorRT-8.0.1.6")
+include_directories(${TENSORRT_DIR}/include)
+link_directories(${TENSORRT_DIR}/lib)
+
+# 6. CUDA
+set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-11.3")
+include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/stubs) # for find libcuda.so
+
 
 # 如果你是不同显卡，请设置为显卡对应的号码参考这里：https://developer.nvidia.com/zh-cn/cuda-gpus#compute
-#set(CUDA_GEN_CODE "-gencode=arch=compute_75,code=sm_75")
-
-# 如果你的opencv找不到，可以自己指定目录
-set(OpenCV_DIR   "/datav/lean/opencv-4.2.0/lib/cmake/opencv4/")
-
-set(CUDA_TOOLKIT_ROOT_DIR     "/datav/lean/cuda-11.2")
-set(CUDNN_DIR    "/datav/lean/cudnn8.2.4.15-cuda11.4")
-set(TENSORRT_DIR "/datav/lean/TensorRT-8.2.3.0-cuda11.4-cudnn8.2")
-
-# set(CUDA_TOOLKIT_ROOT_DIR     "/data/sxai/lean/cuda-10.2")
-# set(CUDNN_DIR    "/data/sxai/lean/cudnn7.6.5.32-cuda10.2")
-# set(TENSORRT_DIR "/data/sxai/lean/TensorRT-7.0.0.11")
-
-# set(CUDA_TOOLKIT_ROOT_DIR  "/data/sxai/lean/cuda-11.1")
-# set(CUDNN_DIR    "/data/sxai/lean/cudnn8.2.2.26")
-# set(TENSORRT_DIR "/data/sxai/lean/TensorRT-7.2.1.6")
-
-# 因为protobuf，需要用特定版本，所以这里指定路径
-set(PROTOBUF_DIR "/datav/lean/protobuf3.11.4")
+# RTX3090 ====> 8.6 (写86)
+# GeForce 940M =====> 5.0  (写50)
+set(CUDA_GEN_CODE "-gencode=arch=compute_86,code=sm_86")
 
 
 find_package(CUDA REQUIRED)
-find_package(OpenCV)
+# find_package(OpenCV)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/application
     ${PROJECT_SOURCE_DIR}/src/tensorRT
     ${PROJECT_SOURCE_DIR}/src/tensorRT/common
-    ${OpenCV_INCLUDE_DIRS}
-    ${CUDA_TOOLKIT_ROOT_DIR}/include
-    ${PROTOBUF_DIR}/include
-    ${TENSORRT_DIR}/include
-    ${CUDNN_DIR}/include
+    # ${OpenCV_INCLUDE_DIRS}
+    # ${CUDA_TOOLKIT_ROOT_DIR}/include
+    # ${PROTOBUF_DIR}/include
+    # ${TENSORRT_DIR}/include
+    # ${CUDNN_DIR}/include
 )
 
-# 切记，protobuf的lib目录一定要比tensorRT目录前面，因为tensorRTlib下带有protobuf的so文件
+# 切记! protobuf的lib目录一定要比tensorRT目录前面，因为tensorRTlib下带有protobuf的so文件
 # 这可能带来错误
-link_directories(
-    ${PROTOBUF_DIR}/lib
-    ${TENSORRT_DIR}/lib
-    ${CUDA_TOOLKIT_ROOT_DIR}/lib64
-    ${CUDNN_DIR}/lib
-)
+# link_directories(
+#     ${PROTOBUF_DIR}/lib
+#     ${TENSORRT_DIR}/lib
+#     ${CUDA_TOOLKIT_ROOT_DIR}/lib64
+#     ${CUDNN_DIR}/lib
+# )
 
-if("${HAS_PYTHON}" STREQUAL "ON")
-    message("Usage Python ${PythonRoot}")
-    include_directories(${PythonRoot}/include/${PythonName})
-    link_directories(${PythonRoot}/lib)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAS_PYTHON")
-endif()
-
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O0 -Wfatal-errors -pthread -w -g")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O0 -Xcompiler -fPIC -g -w ${CUDA_GEN_CODE}")
 file(GLOB_RECURSE cpp_srcs ${PROJECT_SOURCE_DIR}/src/*.cpp)
 file(GLOB_RECURSE cuda_srcs ${PROJECT_SOURCE_DIR}/src/*.cu)
-cuda_add_library(plugin_list SHARED ${cuda_srcs})
+
+# cuda_add_library deprecated! 
+# cuda_add_library(plugin_list SHARED ${cuda_srcs}) 
+add_library(plugin_list SHARED ${cuda_srcs}) 
 target_link_libraries(plugin_list nvinfer nvinfer_plugin)
 target_link_libraries(plugin_list cuda cublas cudart cudnn)
 target_link_libraries(plugin_list protobuf pthread)
