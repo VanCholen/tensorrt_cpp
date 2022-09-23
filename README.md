@@ -1,23 +1,3 @@
-*Read this in other languages: [English](README.md), [简体中文](tutorial/README.zh-cn.md).*
-
-## News: 
-- 🔥 Add yolov7 support .
-- 🔥 Released python solution for hardware decoding with tensorRT integration
-- 🔥 Docker Image has been released：https://hub.docker.com/r/hopef/tensorrt-pro
-- ⚡tensorRT_Pro_comments_version(co-contributing version) is also provided for a better learning experience. Repo: https://github.com/Guanbin-Huang/tensorRT_Pro_comments
-- 🔥 [Simple yolov5/yolox implemention is released. Simple and easy to use.](example-simple_yolo)
-- 🔥 yolov5-1.0-6.0/master are supported.
-- Tutorial notebooks download:
-  - [WarpAffine.lesson.tar.gz](http://zifuture.com:1000/fs/25.shared/warpaffine.lesson.tar.gz)
-  - [Offset.tar.gz](http://zifuture.com:1000/fs/25.shared/offset.tar.gz)
-- Tutorial for exporting CenterNet from pytorch to tensorRT is released. 
-
-## Tutorial Video
-
-- <b>blibli</b> : https://www.bilibili.com/video/BV1Xw411f7FW (Now only in Chinese. English is comming)
-- <b>slides</b> : http://zifuture.com:1556/fs/sxai/tensorRT.pptx (Now only in Chinese. English is comming)
-- <b>tutorial folder</b>: a good intro for beginner to get a general idea of our framework.(Chinese/English)
-
 ## An Out-of-the-Box TensorRT-based Framework for High Performance Inference with C++/Python Support
 
 - C++ Interface: 3 lines of code is all you need to run a YoloX
@@ -921,18 +901,3 @@ RegisterPlugin(HSwish);
 ```
 
 </details>
-
-
-## About Us
-- Our blog：http://www.zifuture.com/                        (Now only in Chinese. English is comming)
-- Our video channel： https://space.bilibili.com/1413433465 (Now only in Chinese. English is comming)
-
-
-
-
-
-
-
-
-
-
