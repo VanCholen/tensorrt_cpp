@@ -1,7 +1,9 @@
 cc        := g++
 nvcc      = ${lean_cuda}/bin/nvcc
 
+# protobuf 环境 3.11.4
 lean_protobuf  := /usr/local/
+# tensor_rt 环境   
 lean_tensor_rt := /home/morvan/sdk/TensorRT-8.0.1.6/
 lean_cudnn     := 
 lean_opencv    := /usr/local/include
@@ -10,12 +12,18 @@ use_python     := true
 
 
 # python_root指向的lib目录下有个libpython3.9.so，因此这里写python3.9
+
 # 对于有些版本，so名字是libpython3.7m.so，你需要填写python3.7m
-# /datav/software/anaconda3/lib/libpython3.9.so
+# /.../anaconda3/lib/libpython3.9.so    (Anaconda安装的环境)
+# 看看你的是不是在这里？
+# /usr/lib/x86_64-linux-gnu/libpython3.8.so   (Linux默认自带的python)
+# /usr/lib/x86_64-linux-gnu/ 这个目录下存放了很多动态连接库
 python_name    := python3.8
 
 # 如果是其他显卡，请修改-gencode=arch=compute_75,code=sm_75为对应显卡的能力
 # 显卡对应的号码参考这里：https://developer.nvidia.com/zh-cn/cuda-gpus#compute
+# RTX3090 ====> 8.6 (写86)
+# GeForce 940M =====> 5.0  (写50)
 cuda_arch := # -gencode=arch=compute_86,code=sm_86
 
 cpp_srcs  := $(shell find src -name "*.cpp")
